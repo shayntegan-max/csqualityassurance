@@ -1,0 +1,852 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --paper:#F5F6F3; --paper-raised:#FFFFFF; --ink:#1E2A2E; --ink-soft:#5B6B6E;
+    --rule:#CFD6D2; --rule-soft:#E3E7E4; --teal:#1F5C56; --teal-dark:#173F3B; --ochre:#93601A;
+    --good:#3F7857; --good-bg:#EAF2ED; --warn:#A9762A; --warn-bg:#F6EFDF; --bad:#A0402B; --bad-bg:#F5E9E4;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:15px;line-height:1.5;padding:32px 20px 80px;}
+  .sheet{max-width:1000px;margin:0 auto;background:var(--paper-raised);border:1px solid var(--rule);}
+  header.masthead{display:flex;align-items:baseline;justify-content:space-between;padding:26px 32px 18px;border-bottom:2px solid var(--ink);flex-wrap:wrap;gap:10px;}
+  header.masthead .title-block h1{font-family:'Source Serif 4',serif;font-weight:700;font-size:27px;margin:0 0 4px;letter-spacing:-0.01em;}
+  header.masthead .title-block p{margin:0;color:var(--ink-soft);font-size:13px;}
+  .who{font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--ink-soft);text-align:right;}
+  .who b{color:var(--ink);}
+  .who button{margin-left:10px;background:none;border:none;color:var(--teal);cursor:pointer;font-size:12px;font-family:'Inter',sans-serif;}
+
+  nav.tabs{display:flex;border-bottom:1px solid var(--rule);padding:0 32px;flex-wrap:wrap;}
+  nav.tabs button{font-family:'Inter',sans-serif;font-size:13.5px;font-weight:500;background:none;border:none;padding:14px 4px;margin-right:24px;color:var(--ink-soft);cursor:pointer;border-bottom:2px solid transparent;position:relative;top:1px;}
+  nav.tabs button.active{color:var(--ink);border-bottom:2px solid var(--teal);}
+  .view{display:none;}
+  .view.active{display:block;}
+
+  /* ---- login overlay ---- */
+  .gate{position:fixed;inset:0;background:var(--paper);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px;}
+  .gate-card{max-width:380px;width:100%;background:var(--paper-raised);border:1px solid var(--rule);padding:32px 30px;}
+  .gate-card h1{font-family:'Source Serif 4',serif;font-size:22px;margin:0 0 6px;}
+  .gate-card p.sub{color:var(--ink-soft);font-size:13px;margin:0 0 22px;}
+  .gate-card label{display:block;font-size:11.5px;color:var(--ink-soft);margin:14px 0 5px;}
+  .gate-card input,.gate-card select{width:100%;padding:9px 10px;border:1px solid var(--rule);border-radius:3px;font-family:'Inter',sans-serif;font-size:14px;color:var(--ink);background:var(--paper-raised);}
+  .gate-card input:focus,.gate-card select:focus{outline:none;border-color:var(--teal);}
+  .gate-card button.go{margin-top:20px;width:100%;background:var(--teal);color:#fff;border:none;padding:11px;border-radius:3px;font-size:14px;font-weight:500;cursor:pointer;}
+  .gate-card button.go:hover{background:var(--teal-dark);}
+  .gate-card .switch{margin-top:14px;font-size:12.5px;color:var(--ink-soft);text-align:center;}
+  .gate-card .switch button{background:none;border:none;color:var(--teal);cursor:pointer;font-size:12.5px;}
+  .gate-msg{margin-top:12px;font-size:12.5px;color:var(--bad);min-height:1em;}
+  .gate-warn{margin-top:16px;padding:9px 12px;background:var(--warn-bg);border:1px solid var(--warn);border-radius:3px;font-size:11.5px;color:var(--ochre);}
+
+  /* meta + rubric (score view) */
+  section.meta{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid var(--rule);}
+  .meta-field{padding:14px 20px;border-right:1px solid var(--rule-soft);}
+  .meta-field:last-child{border-right:none;}
+  .meta-field label{display:block;font-size:11px;color:var(--ink-soft);margin-bottom:5px;}
+  .meta-field input{width:100%;border:none;background:transparent;font-family:'Inter',sans-serif;font-size:14px;color:var(--ink);padding:0;border-bottom:1px solid transparent;}
+  .meta-field input:focus{outline:none;border-bottom:1px solid var(--teal);}
+
+  section.rubric{padding:22px 32px 8px;}
+  .rubric-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px;}
+  .rubric-head h2{font-family:'Source Serif 4',serif;font-size:16.5px;margin:0;font-weight:600;}
+  .weight-check{font-family:'IBM Plex Mono',monospace;font-size:12.5px;padding:3px 9px;border-radius:3px;}
+  .weight-check.ok{color:var(--good);background:var(--good-bg);}
+  .weight-check.bad{color:var(--bad);background:var(--bad-bg);}
+
+  table.grid{width:100%;border-collapse:collapse;table-layout:fixed;}
+  table.grid col.c-cat{width:26%;} table.grid col.c-weight{width:10%;} table.grid col.c-max{width:9%;}
+  table.grid col.c-score{width:9%;} table.grid col.c-weighted{width:12%;} table.grid col.c-notes{width:29%;} table.grid col.c-del{width:5%;}
+  table.grid thead th{text-align:left;font-size:11px;color:var(--ink-soft);font-weight:500;padding:0 8px 8px;border-bottom:1px solid var(--ink);}
+  table.grid thead th.num{text-align:right;}
+  table.grid tbody td{padding:9px 8px;border-bottom:1px solid var(--rule-soft);vertical-align:middle;}
+  table.grid tbody tr:hover{background:#FAFBFA;}
+  table.grid input,table.grid textarea{width:100%;border:none;background:transparent;font-family:'Inter',sans-serif;font-size:13.5px;color:var(--ink);padding:3px 4px;border-radius:2px;}
+  table.grid input:focus,table.grid textarea:focus{outline:none;background:#F0F4F3;}
+  td.num input{font-family:'IBM Plex Mono',monospace;text-align:right;}
+  td.weight input{color:var(--ochre);font-weight:500;}
+  td.weighted-out{font-family:'IBM Plex Mono',monospace;text-align:right;color:var(--ink-soft);padding-right:12px;font-size:13.5px;}
+  .row-del{background:none;border:none;cursor:pointer;color:var(--rule);font-size:16px;line-height:1;padding:2px 6px;}
+  .row-del:hover{color:var(--bad);}
+  .add-row{margin:10px 0 4px;background:none;border:1px dashed var(--rule);color:var(--ink-soft);font-size:13px;padding:7px 14px;border-radius:3px;cursor:pointer;font-family:'Inter',sans-serif;}
+  .add-row:hover{border-color:var(--teal);color:var(--teal);}
+
+  section.summary{display:grid;grid-template-columns:220px 1fr;border-top:2px solid var(--ink);margin-top:18px;}
+  .score-block{padding:22px 28px;border-right:1px solid var(--rule);display:flex;flex-direction:column;justify-content:center;align-items:flex-start;}
+  .score-block .pct{font-family:'IBM Plex Mono',monospace;font-size:42px;font-weight:600;line-height:1;}
+  .score-block .frac{font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--ink-soft);margin-top:4px;}
+  .band-pill{display:inline-block;margin-top:10px;font-size:12.5px;padding:4px 10px;border-radius:3px;font-weight:500;}
+  .band-config{padding:20px 28px;}
+  .band-config h3{font-family:'Source Serif 4',serif;font-size:14px;margin:0 0 10px;font-weight:600;color:var(--ink-soft);}
+  .bands-row{display:flex;gap:18px;flex-wrap:wrap;}
+  .band-edit{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-soft);}
+  .band-edit .swatch{width:9px;height:9px;border-radius:50%;display:inline-block;}
+  .band-edit input{width:44px;font-family:'IBM Plex Mono',monospace;border:none;border-bottom:1px dotted var(--rule);background:transparent;text-align:center;font-size:12.5px;color:var(--ink);}
+  .overall-notes{margin-top:16px;}
+  .overall-notes label{display:block;font-size:11px;color:var(--ink-soft);margin-bottom:5px;}
+  .overall-notes textarea{width:100%;min-height:52px;border:1px solid var(--rule);border-radius:3px;font-family:'Inter',sans-serif;font-size:13.5px;padding:8px 10px;resize:vertical;color:var(--ink);}
+  .overall-notes textarea:focus{outline:none;border-color:var(--teal);}
+
+  footer.actions{display:flex;justify-content:flex-end;gap:10px;padding:18px 32px 28px;flex-wrap:wrap;}
+  footer.actions button{font-family:'Inter',sans-serif;font-size:13px;font-weight:500;padding:9px 16px;border-radius:3px;cursor:pointer;border:1px solid var(--rule);background:var(--paper-raised);color:var(--ink);}
+  footer.actions button.primary{background:var(--teal);border-color:var(--teal);color:#fff;}
+  footer.actions button.primary:hover{background:var(--teal-dark);}
+  footer.actions button:hover{border-color:var(--ink-soft);}
+  footer.actions button.danger:hover{border-color:var(--bad);color:var(--bad);}
+
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--ink);color:#fff;font-size:13px;padding:9px 16px;border-radius:4px;opacity:0;transition:opacity .25s, transform .25s;pointer-events:none;z-index:200;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  /* dashboards / tables shared */
+  .toolbar{display:flex;align-items:center;justify-content:space-between;padding:20px 32px 4px;flex-wrap:wrap;gap:10px;}
+  .toolbar .filter-group{display:flex;align-items:center;gap:10px;}
+  .toolbar label{font-size:12px;color:var(--ink-soft);}
+  .toolbar select{font-family:'Inter',sans-serif;font-size:13px;padding:6px 10px;border:1px solid var(--rule);border-radius:3px;background:var(--paper-raised);color:var(--ink);}
+  .toolbar .refresh-btn{font-size:12.5px;color:var(--teal);background:none;border:none;cursor:pointer;padding:6px 4px;}
+  .toolbar .updated-at{font-size:11.5px;color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;}
+  .stat-strip{display:grid;grid-template-columns:1fr 1fr 1fr;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);margin-top:12px;}
+  .stat{padding:16px 28px;border-right:1px solid var(--rule-soft);}
+  .stat:last-child{border-right:none;}
+  .stat .label{font-size:11px;color:var(--ink-soft);margin-bottom:6px;}
+  .stat .value{font-family:'IBM Plex Mono',monospace;font-size:25px;font-weight:600;}
+  .chart-wrap{padding:22px 32px 8px;height:250px;}
+  .table-wrap{padding:8px 32px 28px;overflow-x:auto;}
+  table.datatable{width:100%;border-collapse:collapse;font-size:13px;min-width:600px;}
+  table.datatable thead th{text-align:left;font-size:11px;color:var(--ink-soft);font-weight:500;padding:0 10px 8px;border-bottom:1px solid var(--ink);white-space:nowrap;}
+  table.datatable tbody td{padding:9px 10px;border-bottom:1px solid var(--rule-soft);white-space:nowrap;}
+  table.datatable tbody tr:hover{background:#FAFBFA;cursor:pointer;}
+  table.datatable .score-cell{font-family:'IBM Plex Mono',monospace;}
+  table.datatable .band-tag{font-size:11px;padding:2px 8px;border-radius:3px;font-weight:500;}
+  table.datatable .rank{font-family:'IBM Plex Mono',monospace;color:var(--ink-soft);}
+  .empty-state,.loading-state{padding:40px 32px;text-align:center;color:var(--ink-soft);font-size:13.5px;}
+  .loading-state{font-family:'IBM Plex Mono',monospace;font-size:13px;}
+  .share-note{margin:0 32px 20px;padding:10px 14px;background:var(--warn-bg);border:1px solid var(--warn);border-radius:3px;font-size:12.5px;color:var(--ochre);}
+  .gapstrengths{display:flex;gap:24px;padding:4px 32px 20px;flex-wrap:wrap;}
+  .gs-col{flex:1;min-width:220px;}
+  .gs-col h4{font-family:'Source Serif 4',serif;font-size:13.5px;margin:0 0 8px;font-weight:600;color:var(--ink-soft);}
+  .gs-chip{display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--rule-soft);}
+  .gs-chip span.val{font-family:'IBM Plex Mono',monospace;}
+
+  /* detail / comment panel */
+  .detail-overlay{position:fixed;inset:0;background:rgba(30,42,46,0.4);display:flex;align-items:flex-start;justify-content:center;padding:40px 16px;z-index:150;overflow-y:auto;}
+  .detail-card{max-width:640px;width:100%;background:var(--paper-raised);border:1px solid var(--rule);}
+  .detail-head{display:flex;justify-content:space-between;align-items:baseline;padding:20px 26px;border-bottom:2px solid var(--ink);}
+  .detail-head h2{font-family:'Source Serif 4',serif;font-size:19px;margin:0;}
+  .detail-head button{background:none;border:none;font-size:20px;color:var(--ink-soft);cursor:pointer;}
+  .detail-body{padding:18px 26px;}
+  .detail-meta{font-size:12.5px;color:var(--ink-soft);margin-bottom:12px;}
+  table.detail-rubric{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:14px;}
+  table.detail-rubric th{text-align:left;font-size:10.5px;color:var(--ink-soft);border-bottom:1px solid var(--ink);padding:0 6px 6px;}
+  table.detail-rubric td{padding:6px 6px;border-bottom:1px solid var(--rule-soft);}
+  .comment-thread{margin-top:16px;border-top:1px solid var(--rule);padding-top:14px;}
+  .comment-thread h4{font-family:'Source Serif 4',serif;font-size:14px;margin:0 0 10px;font-weight:600;}
+  .comment{padding:9px 0;border-bottom:1px solid var(--rule-soft);font-size:13px;}
+  .comment .c-meta{font-size:11px;color:var(--ink-soft);margin-bottom:3px;}
+  .comment .c-tag{font-size:10.5px;padding:1px 7px;border-radius:3px;margin-right:6px;}
+  .comment .c-tag.calibration{background:var(--good-bg);color:var(--good);}
+  .comment .c-tag.dispute{background:var(--bad-bg);color:var(--bad);}
+  .comment-form{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+  .comment-form select{font-size:12.5px;padding:6px 8px;border:1px solid var(--rule);border-radius:3px;}
+  .comment-form input{flex:1;min-width:160px;padding:7px 10px;border:1px solid var(--rule);border-radius:3px;font-size:13px;}
+  .comment-form button{padding:7px 14px;background:var(--teal);color:#fff;border:none;border-radius:3px;font-size:12.5px;cursor:pointer;}
+
+  /* admin */
+  .admin-section{padding:20px 32px;}
+  .admin-section h3{font-family:'Source Serif 4',serif;font-size:15px;margin:0 0 12px;}
+  table.roster{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px;}
+  table.roster th{text-align:left;font-size:11px;color:var(--ink-soft);border-bottom:1px solid var(--ink);padding:0 8px 8px;}
+  table.roster td{padding:8px 8px;border-bottom:1px solid var(--rule-soft);}
+  .role-tag{font-size:11px;padding:2px 8px;border-radius:3px;background:var(--rule-soft);color:var(--ink-soft);}
+  .add-person{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:24px;}
+  .add-person input,.add-person select{padding:7px 10px;border:1px solid var(--rule);border-radius:3px;font-size:13px;}
+  .add-person button{padding:7px 14px;background:var(--teal);color:#fff;border:none;border-radius:3px;font-size:12.5px;cursor:pointer;}
+  .passcode-row{display:flex;gap:8px;align-items:center;}
+  .passcode-row input{padding:7px 10px;border:1px solid var(--rule);border-radius:3px;font-size:13px;width:160px;}
+  .passcode-row button{padding:7px 14px;background:var(--paper-raised);border:1px solid var(--rule);border-radius:3px;font-size:12.5px;cursor:pointer;}
+  .remove-btn{background:none;border:none;color:var(--rule);cursor:pointer;font-size:15px;}
+  .remove-btn:hover{color:var(--bad);}
+
+  @media (max-width:720px){
+    section.meta{grid-template-columns:1fr 1fr;}
+    section.summary{grid-template-columns:1fr;}
+    .stat-strip{grid-template-columns:1fr;}
+    .score-block{border-right:none;border-bottom:1px solid var(--rule);}
+    .stat{border-right:none;border-bottom:1px solid var(--rule-soft);}
+    table.grid, table.grid thead{display:none;}
+    table.grid tbody, table.grid tbody tr{display:block;}
+    table.grid tbody tr{border:1px solid var(--rule-soft);border-radius:4px;margin-bottom:10px;padding:8px 6px;}
+    table.grid tbody td{display:flex;align-items:center;gap:8px;border-bottom:none;padding:5px 6px;}
+    table.grid tbody td::before{content:attr(data-label);font-size:10.5px;color:var(--ink-soft);width:78px;flex-shrink:0;}
+  }
+  @media print{
+    body{background:#fff;padding:0;}
+    .sheet{border:none;max-width:100%;}
+    .add-row, footer.actions, .row-del, nav.tabs{display:none !important;}
+  }
+</style>
+<!-- ===================== LOGIN GATE ===================== -->
+<div class="gate" id="gate">
+  <div class="gate-card" id="gateCard"><div class="loading-state">Loading...</div></div>
+</div>
+
+<!-- ===================== MAIN APP ===================== -->
+<div class="sheet" id="app" style="display:none;">
+  <header class="masthead">
+    <div class="title-block">
+      <h1>QA Audit Tool</h1>
+      <p>Case review, scoring, calibration &amp; agent performance tracking</p>
+    </div>
+    <div class="who" id="whoBox"></div>
+  </header>
+
+  <nav class="tabs" id="tabNav"></nav>
+
+  <!-- ---- SCORE A CASE ---- -->
+  <div class="view" id="scoreView">
+    <section class="meta">
+      <div class="meta-field"><label>Case #</label><input id="caseId" placeholder="00123456" /></div>
+      <div class="meta-field"><label>Agent</label><select id="agentSelect"><option value="">Select agent...</option></select></div>
+      <div class="meta-field"><label>Date reviewed</label><input id="reviewDate" type="date" /></div>
+      <div class="meta-field"><label>Issue type</label><input id="issueType" placeholder="e.g. Billing, Shipping, Account access" /></div>
+    </section>
+
+    <section class="rubric">
+      <div class="rubric-head">
+        <h2>Rubric</h2>
+        <span id="weightCheck" class="weight-check ok">weights sum to 100%</span>
+      </div>
+      <table class="grid">
+        <colgroup><col class="c-cat"><col class="c-weight"><col class="c-max"><col class="c-score"><col class="c-weighted"><col class="c-notes"><col class="c-del"></colgroup>
+        <thead><tr><th>Category</th><th class="num">Weight %</th><th class="num">Max</th><th class="num">Score</th><th class="num">Weighted</th><th>Notes</th><th></th></tr></thead>
+        <tbody id="rubricBody"></tbody>
+      </table>
+      <button class="add-row" id="addRow">+ Add category</button>
+    </section>
+
+    <section class="summary">
+      <div class="score-block">
+        <div class="pct" id="pctOut">0%</div>
+        <div class="frac" id="fracOut">0.0 / 0.0 pts</div>
+        <div class="band-pill" id="bandOut">—</div>
+      </div>
+      <div class="band-config">
+        <h3>Scoring bands (edit thresholds)</h3>
+        <div class="bands-row">
+          <div class="band-edit"><span class="swatch" style="background:var(--bad)"></span>Below <input id="thBad" type="number" value="60">%</div>
+          <div class="band-edit"><span class="swatch" style="background:var(--warn)"></span>Below <input id="thWarn" type="number" value="80">%</div>
+        </div>
+        <div class="overall-notes">
+          <label>Overall notes / coaching summary</label>
+          <textarea id="overallNotes" placeholder="Summary of strengths, gaps, and follow-up coaching..."></textarea>
+        </div>
+      </div>
+    </section>
+
+    <footer class="actions">
+      <button class="primary" id="saveBtn">Save to team log</button>
+      <button id="printBtn">Print / Save PDF</button>
+      <button id="copyBtn">Copy summary</button>
+      <button class="danger" id="resetBtn">Reset</button>
+    </footer>
+  </div>
+
+  <!-- ---- TEAM HISTORY ---- -->
+  <div class="view" id="historyView">
+    <div class="share-note">Reviews are protected by database-level rules tied to real logins — agents can only ever receive their own rows, even outside this app.</div>
+    <div class="toolbar">
+      <div class="filter-group"><label for="agentFilterHist">Agent</label>
+        <select id="agentFilterHist"><option value="__all__">All agents</option></select>
+      </div>
+      <div class="filter-group"><label for="periodTypeHist">Period</label>
+        <select id="periodTypeHist">
+          <option value="all">All time</option>
+          <option value="week">Weekly</option>
+          <option value="month">Monthly</option>
+        </select>
+      </div>
+      <div class="filter-group" id="periodValueWrap" style="display:none;">
+        <select id="periodValueHist"></select>
+      </div>
+      <div class="filter-group"><span class="updated-at" id="updatedAtHist"></span><button class="refresh-btn" id="refreshHist">Refresh</button></div>
+    </div>
+    <div class="stat-strip">
+      <div class="stat"><div class="label">Reviews logged</div><div class="value" id="statCount">0</div></div>
+      <div class="stat"><div class="label">Team average score</div><div class="value" id="statAvg">—</div></div>
+      <div class="stat"><div class="label">Agents tracked</div><div class="value" id="statAgents">0</div></div>
+    </div>
+    <div class="chart-wrap"><canvas id="historyChart"></canvas></div>
+    <div id="historyTableWrap" class="table-wrap"><div class="loading-state">Loading...</div></div>
+  </div>
+
+  <!-- ---- LEADERBOARD ---- -->
+  <div class="view" id="leaderboardView">
+    <div class="toolbar">
+      <div class="filter-group"><label>Ranked by average score</label></div>
+      <div class="filter-group"><button class="refresh-btn" id="refreshLb">Refresh</button></div>
+    </div>
+    <div class="table-wrap" id="leaderboardWrap"><div class="loading-state">Loading...</div></div>
+  </div>
+
+  <!-- ---- AGENT DASHBOARD ---- -->
+  <div class="view" id="agentView">
+    <div class="toolbar">
+      <div class="filter-group" id="agentPickerWrap">
+        <label for="agentPicker">Agent</label>
+        <select id="agentPicker"></select>
+      </div>
+      <div class="filter-group"><button class="refresh-btn" id="refreshAgent">Refresh</button></div>
+    </div>
+    <div class="stat-strip">
+      <div class="stat"><div class="label">Reviews on file</div><div class="value" id="agStatCount">0</div></div>
+      <div class="stat"><div class="label">Average score</div><div class="value" id="agStatAvg">—</div></div>
+      <div class="stat"><div class="label">Latest band</div><div class="value" id="agStatBand" style="font-size:16px;">—</div></div>
+    </div>
+    <div class="chart-wrap"><canvas id="agentChart"></canvas></div>
+    <div class="gapstrengths">
+      <div class="gs-col"><h4>Strongest categories</h4><div id="strongList"></div></div>
+      <div class="gs-col"><h4>Categories needing focus</h4><div id="weakList"></div></div>
+    </div>
+    <div class="table-wrap" id="agentTableWrap"><div class="loading-state">Loading...</div></div>
+  </div>
+
+  <!-- ---- ADMIN ---- -->
+  <div class="view" id="adminView">
+    <div class="admin-section">
+      <div class="share-note">Adding or removing people happens in Supabase (Authentication → Add user). This tab lets you change someone's role once they exist.</div>
+      <h3>People</h3>
+      <table class="roster" id="rosterTable"></table>
+    </div>
+  </div>
+</div>
+
+<!-- detail/comment overlay -->
+<div class="detail-overlay" id="detailOverlay" style="display:none;">
+  <div class="detail-card" id="detailCard"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+(function(){
+  // ---- fill in your Supabase project values ----
+  const SUPABASE_URL = 'YOUR_SUPABASE_PROJECT_URL';        // e.g. https://abcd1234.supabase.co
+  const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_PUBLISHABLE_KEY'; // Project Settings → API → anon/publishable key
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  let currentUser = null;      // {id, email, name, role}
+  let profilesById = {};       // id -> {name, role}
+  let agentOptions = [];       // [{id,name}] role=agent
+  let allReviews = [];         // rows from `reviews`, agent_id/reviewer_id resolved to names client-side for display
+  let historyChart=null, agentChart=null;
+
+  function escapeHtml(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2400); }
+  function bandColor(key){ return key==='bad' ? '#A0402B' : key==='warn' ? '#A9762A' : '#3F7857'; }
+  function bandBg(key){ return key==='bad' ? '#F5E9E4' : key==='warn' ? '#F6EFDF' : '#EAF2ED'; }
+  function nameFor(id){ return (profilesById[id] && profilesById[id].name) || 'Unknown'; }
+
+  // ================= AUTH / GATE =================
+  async function initGate(){
+    const { data } = await sb.auth.getSession();
+    if(data && data.session){ await loadProfileAndEnter(data.session.user); }
+    else renderLogin();
+  }
+
+  sb.auth.onAuthStateChange((event, session) => {
+    if(event === 'SIGNED_OUT'){
+      currentUser = null;
+      document.getElementById('app').style.display='none';
+      document.getElementById('gate').style.display='flex';
+      renderLogin();
+    }
+  });
+
+  function renderLogin(msg){
+    document.getElementById('gateCard').innerHTML = `
+      <h1>Sign in</h1>
+      <p class="sub">Use the email and password your admin set up for you.</p>
+      <label>Email</label><input id="loginEmail" type="email" placeholder="you@company.com" />
+      <label>Password</label><input id="loginPassword" type="password" placeholder="Password" />
+      <button class="go" id="loginGo">Sign in</button>
+      <div class="gate-msg" id="gateMsg">${msg ? escapeHtml(msg) : ''}</div>
+    `;
+    document.getElementById('loginGo').addEventListener('click', doLogin);
+    document.getElementById('loginPassword').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+  }
+
+  async function doLogin(){
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const goBtn = document.getElementById('loginGo');
+    if(!email || !password){ document.getElementById('gateMsg').textContent = 'Enter both email and password.'; return; }
+    goBtn.disabled = true; goBtn.textContent = 'Signing in...';
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+    goBtn.disabled = false; goBtn.textContent = 'Sign in';
+    if(error){ document.getElementById('gateMsg').textContent = 'Incorrect email or password.'; return; }
+    await loadProfileAndEnter(data.user);
+  }
+
+  async function loadProfileAndEnter(user){
+    const { data, error } = await sb.from('profiles').select('*').eq('id', user.id).single();
+    if(error || !data){
+      await sb.auth.signOut();
+      renderLogin('No profile found for this login — ask your admin to check your account.');
+      return;
+    }
+    currentUser = { id: user.id, email: user.email, name: data.name, role: data.role };
+    profilesById[user.id] = { name: data.name, role: data.role };
+    enterApp();
+  }
+
+  function enterApp(){
+    document.getElementById('gate').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('whoBox').innerHTML = `Signed in as <b>${escapeHtml(currentUser.name)}</b> (${escapeHtml(currentUser.role)}) <button id="signOutBtn">Sign out</button>`;
+    document.getElementById('signOutBtn').addEventListener('click', ()=> sb.auth.signOut());
+    buildTabs();
+  }
+
+  function buildTabs(){
+    const isAdmin = currentUser.role === 'admin';
+    const isReviewer = currentUser.role === 'reviewer' || isAdmin;
+    const tabs = [];
+    if(isReviewer) tabs.push(['scoreView','Score a case']);
+    if(isReviewer) tabs.push(['historyView','Team history']);
+    if(isReviewer) tabs.push(['leaderboardView','Leaderboard']);
+    tabs.push(['agentView', currentUser.role==='agent' ? 'My dashboard' : 'Agent dashboard']);
+    if(isAdmin) tabs.push(['adminView','Admin']);
+
+    const nav = document.getElementById('tabNav');
+    nav.innerHTML = tabs.map((t,i)=>`<button class="tab-btn${i===0?' active':''}" data-view="${t[0]}">${t[1]}</button>`).join('');
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    document.getElementById(tabs[0][0]).classList.add('active');
+
+    nav.querySelectorAll('.tab-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        nav.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+        document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(btn.dataset.view).classList.add('active');
+        onTabOpen(btn.dataset.view);
+      });
+    });
+    onTabOpen(tabs[0][0]);
+    if(isReviewer) loadAgentOptions();
+  }
+
+  function onTabOpen(view){
+    if(view==='historyView') loadReviews().then(renderHistory);
+    if(view==='leaderboardView') loadReviews().then(renderLeaderboard);
+    if(view==='agentView') loadReviews().then(()=>setupAgentPicker());
+    if(view==='adminView') loadAllProfiles().then(renderAdmin);
+  }
+
+  // ================= LOOKUPS =================
+  async function loadAgentOptions(){
+    const { data, error } = await sb.from('profiles').select('id,name').eq('role','agent').order('name');
+    if(error){ showToast('Could not load agent list'); return; }
+    agentOptions = data || [];
+    data.forEach(p=> profilesById[p.id] = { name: p.name, role: 'agent' });
+    const sel = document.getElementById('agentSelect');
+    const current = sel.value;
+    sel.innerHTML = '<option value="">Select agent...</option>' + agentOptions.map(a=>`<option value="${a.id}">${escapeHtml(a.name)}</option>`).join('');
+    if(agentOptions.some(a=>a.id===current)) sel.value = current;
+  }
+  async function loadAllProfiles(){
+    const { data, error } = await sb.from('profiles').select('*').order('name');
+    if(error) return [];
+    data.forEach(p=> profilesById[p.id] = { name: p.name, role: p.role });
+    return data;
+  }
+
+  // ================= SCORE A CASE =================
+  const defaultRows = [
+    {cat:"Greeting & rapport", weight:10, max:5, score:0, notes:""},
+    {cat:"Accuracy of resolution", weight:30, max:5, score:0, notes:""},
+    {cat:"Tone & empathy", weight:20, max:5, score:0, notes:""},
+    {cat:"Process / policy compliance", weight:20, max:5, score:0, notes:""},
+    {cat:"Documentation & follow-up", weight:20, max:5, score:0, notes:""}
+  ];
+  const rubricBody = document.getElementById('rubricBody');
+
+  function makeRow(data){
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td data-label="Category"><input class="f-cat" type="text" value="${escapeHtml(data.cat)}" placeholder="Category name"></td>
+      <td class="num weight" data-label="Weight %"><input class="f-weight" type="number" min="0" max="100" step="1" value="${data.weight}"></td>
+      <td class="num" data-label="Max"><input class="f-max" type="number" min="1" step="1" value="${data.max}"></td>
+      <td class="num" data-label="Score"><input class="f-score" type="number" min="0" max="${data.max}" step="1" value="${data.score}"></td>
+      <td class="weighted-out" data-label="Weighted"><span class="f-weighted-out">0.0</span></td>
+      <td data-label="Notes"><input class="f-notes" type="text" value="${escapeHtml(data.notes)}" placeholder="Observation..."></td>
+      <td data-label=""><button class="row-del" title="Remove row">×</button></td>`;
+    rubricBody.appendChild(tr);
+    tr.querySelector('.f-max').addEventListener('input', e=>{
+      let max = Math.round(parseFloat(e.target.value)) || 1; if(max < 1) max = 1;
+      e.target.value = max;
+      const scoreInput = tr.querySelector('.f-score');
+      scoreInput.max = max;
+      if(parseFloat(scoreInput.value) > max) scoreInput.value = max;
+      recalc();
+    });
+    tr.querySelector('.f-score').addEventListener('input', e=>{
+      const max = parseFloat(tr.querySelector('.f-max').value) || 1;
+      let score = Math.round(parseFloat(e.target.value));
+      if(isNaN(score) || score < 0) score = 0;
+      if(score > max) score = max;
+      e.target.value = score;
+      recalc();
+    });
+    tr.querySelector('.f-weight').addEventListener('input', e=>{
+      let w = Math.round(parseFloat(e.target.value));
+      if(isNaN(w) || w < 0) w = 0; if(w > 100) w = 100;
+      e.target.value = w;
+      recalc();
+    });
+    tr.querySelectorAll('.f-cat, .f-notes').forEach(inp=> inp.addEventListener('input', recalc));
+    tr.querySelector('.row-del').addEventListener('click', ()=>{ tr.remove(); recalc(); });
+  }
+  function getRowsData(){
+    return Array.from(rubricBody.querySelectorAll('tr')).map(tr=>({
+      cat: tr.querySelector('.f-cat').value,
+      weight: parseFloat(tr.querySelector('.f-weight').value)||0,
+      max: parseFloat(tr.querySelector('.f-max').value)||1,
+      score: parseFloat(tr.querySelector('.f-score').value)||0,
+      notes: tr.querySelector('.f-notes').value
+    }));
+  }
+  function getBand(pct){
+    const thBad = parseFloat(document.getElementById('thBad').value)||0;
+    const thWarn = parseFloat(document.getElementById('thWarn').value)||0;
+    if(pct < thBad) return {label:'Needs improvement', color:'var(--bad)', bg:'var(--bad-bg)', key:'bad'};
+    if(pct < thWarn) return {label:'Meets expectations', color:'var(--warn)', bg:'var(--warn-bg)', key:'warn'};
+    return {label:'Exceeds expectations', color:'var(--good)', bg:'var(--good-bg)', key:'good'};
+  }
+  function recalc(){
+    const trs = Array.from(rubricBody.querySelectorAll('tr'));
+    let totalWeight=0, earned=0, possible=0;
+    trs.forEach(tr=>{
+      const weight = Math.round(parseFloat(tr.querySelector('.f-weight').value))||0;
+      const max = Math.round(parseFloat(tr.querySelector('.f-max').value))||1;
+      let score = Math.round(parseFloat(tr.querySelector('.f-score').value)); if(isNaN(score)||score<0) score=0; if(score>max) score=max;
+      const weighted = (score/max)*weight;
+      tr.querySelector('.f-weighted-out').textContent = weighted.toFixed(1);
+      totalWeight += weight; earned += weighted; possible += weight;
+    });
+    const wc = document.getElementById('weightCheck');
+    if(Math.abs(totalWeight-100)<0.01){ wc.textContent='weights sum to 100%'; wc.className='weight-check ok'; }
+    else { wc.textContent=`weights sum to ${totalWeight.toFixed(0)}% (adjust to 100%)`; wc.className='weight-check bad'; }
+    const pct = possible>0 ? (earned/possible)*100 : 0;
+    document.getElementById('pctOut').textContent = pct.toFixed(1)+'%';
+    document.getElementById('fracOut').textContent = `${earned.toFixed(1)} / ${possible.toFixed(1)} pts`;
+    const band = getBand(pct);
+    const bandOut = document.getElementById('bandOut');
+    bandOut.textContent = band.label; bandOut.style.color = band.color; bandOut.style.background = band.bg;
+    document.getElementById('pctOut').style.color = band.color;
+    return {pct, earned, possible};
+  }
+  document.getElementById('addRow').addEventListener('click', ()=>{ makeRow({cat:"",weight:0,max:5,score:0,notes:""}); recalc(); });
+  document.getElementById('thBad').addEventListener('input', recalc);
+  document.getElementById('thWarn').addEventListener('input', recalc);
+  document.getElementById('printBtn').addEventListener('click', ()=> window.print());
+  document.getElementById('resetBtn').addEventListener('click', ()=>{
+    if(!confirm('Clear all fields and start a new case?')) return;
+    document.getElementById('caseId').value=''; document.getElementById('agentSelect').value='';
+    document.getElementById('reviewDate').value=''; document.getElementById('issueType').value=''; document.getElementById('overallNotes').value='';
+    rubricBody.innerHTML=''; defaultRows.forEach(makeRow); recalc();
+  });
+  function buildSummaryText(){
+    const trs = Array.from(rubricBody.querySelectorAll('tr'));
+    const agentName = document.getElementById('agentSelect').selectedOptions[0] ? document.getElementById('agentSelect').selectedOptions[0].textContent : '—';
+    let lines=['QA SCORECARD',
+      `Case #: ${document.getElementById('caseId').value||'—'}`,
+      `Agent: ${agentName}`,
+      `Reviewer: ${currentUser.name}`,
+      `Date: ${document.getElementById('reviewDate').value||'—'}`,
+      `Issue type: ${document.getElementById('issueType').value||'—'}`,'',
+      'Category | Weight% | Score/Max | Weighted'];
+    trs.forEach(tr=>{
+      lines.push(`${tr.querySelector('.f-cat').value||'(untitled)'} | ${tr.querySelector('.f-weight').value}% | ${tr.querySelector('.f-score').value}/${tr.querySelector('.f-max').value} | ${tr.querySelector('.f-weighted-out').textContent}${tr.querySelector('.f-notes').value ? '  — '+tr.querySelector('.f-notes').value : ''}`);
+    });
+    lines.push('', `Total: ${document.getElementById('pctOut').textContent} (${document.getElementById('fracOut').textContent}) — ${document.getElementById('bandOut').textContent}`);
+    const overall = document.getElementById('overallNotes').value;
+    if(overall){ lines.push('', 'Overall notes:', overall); }
+    return lines.join('\n');
+  }
+  document.getElementById('copyBtn').addEventListener('click', ()=>{
+    navigator.clipboard.writeText(buildSummaryText()).then(()=>showToast('Summary copied to clipboard')).catch(()=>showToast('Could not copy — select manually'));
+  });
+  document.getElementById('saveBtn').addEventListener('click', async ()=>{
+    const agentId = document.getElementById('agentSelect').value;
+    if(!agentId){ showToast('Select an agent before saving'); return; }
+    const {pct, earned, possible} = recalc();
+    const band = getBand(pct);
+    const record = {
+      agent_id: agentId,
+      reviewer_id: currentUser.id,
+      case_id: document.getElementById('caseId').value.trim(),
+      issue_type: document.getElementById('issueType').value.trim(),
+      review_date: document.getElementById('reviewDate').value || new Date().toISOString().slice(0,10),
+      rows: getRowsData(),
+      overall_notes: document.getElementById('overallNotes').value.trim(),
+      pct: Math.round(pct*10)/10, earned: Math.round(earned*10)/10, possible: Math.round(possible*10)/10,
+      band_key: band.key, band_label: band.label,
+      comments: []
+    };
+    const btn = document.getElementById('saveBtn');
+    btn.disabled=true; btn.textContent='Saving...';
+    const { error } = await sb.from('reviews').insert(record);
+    btn.disabled=false; btn.textContent='Save to team log';
+    if(error){ showToast('Save failed — ' + error.message); return; }
+    showToast(`Saved — ${nameFor(agentId)} scored ${record.pct}%`);
+  });
+
+  // ================= SHARED: load reviews =================
+  async function loadReviews(){
+    const { data, error } = await sb.from('reviews').select('*').order('review_date', {ascending:false});
+    if(error){ showToast('Could not load reviews'); return []; }
+    // resolve any agent/reviewer names we don't have cached yet (covers agents viewing their own row)
+    const missingIds = Array.from(new Set(data.flatMap(r=>[r.agent_id, r.reviewer_id]))).filter(id=> id && !profilesById[id]);
+    if(missingIds.length){
+      const { data: extra } = await sb.from('profiles').select('id,name,role').in('id', missingIds);
+      (extra||[]).forEach(p=> profilesById[p.id] = { name:p.name, role:p.role });
+    }
+    allReviews = data.map(r=>({
+      id: r.id, agent: nameFor(r.agent_id), agentId: r.agent_id, reviewer: nameFor(r.reviewer_id),
+      caseId: r.case_id, issueType: r.issue_type, date: r.review_date, rows: r.rows,
+      overallNotes: r.overall_notes, pct: r.pct, earned: r.earned, possible: r.possible,
+      bandKey: r.band_key, bandLabel: r.band_label, comments: r.comments || []
+    }));
+    return allReviews;
+  }
+
+  // ================= TEAM HISTORY =================
+  function populateAgentSelect(selectEl, records, includeAll){
+    const current = selectEl.value;
+    const agents = Array.from(new Set(records.map(r=>r.agent).filter(Boolean))).sort();
+    selectEl.innerHTML = (includeAll ? '<option value="__all__">All agents</option>' : '') +
+      agents.map(a=>`<option value="${escapeHtml(a)}">${escapeHtml(a)}</option>`).join('');
+    if(agents.includes(current) || current==='__all__') selectEl.value = current;
+  }
+  function weekKey(dateStr){
+    if(!dateStr) return null;
+    const d = new Date(dateStr+'T00:00:00'); if(isNaN(d)) return null;
+    const dow = (d.getDay()+6)%7; const monday = new Date(d); monday.setDate(d.getDate()-dow);
+    return monday.toISOString().slice(0,10);
+  }
+  function weekLabel(mondayStr){
+    const monday = new Date(mondayStr+'T00:00:00'); const sunday = new Date(monday); sunday.setDate(monday.getDate()+6);
+    const fmt = (d)=> d.toLocaleDateString(undefined,{month:'short',day:'numeric'});
+    return `Week of ${fmt(monday)} – ${fmt(sunday)}`;
+  }
+  function monthKey(dateStr){ return dateStr ? dateStr.slice(0,7) : null; }
+  function monthLabel(mk){ const [y,m] = mk.split('-').map(Number); return new Date(y, m-1, 1).toLocaleDateString(undefined,{month:'long', year:'numeric'}); }
+  function populatePeriodValueSelect(){
+    const type = document.getElementById('periodTypeHist').value;
+    const wrap = document.getElementById('periodValueWrap'); const sel = document.getElementById('periodValueHist');
+    if(type === 'all'){ wrap.style.display = 'none'; return; }
+    wrap.style.display = 'flex';
+    const current = sel.value;
+    if(type === 'week'){
+      const keys = Array.from(new Set(allReviews.map(r=>weekKey(r.date)).filter(Boolean))).sort().reverse();
+      sel.innerHTML = keys.map(k=>`<option value="${k}">${weekLabel(k)}</option>`).join('') || '<option value="">No dated reviews yet</option>';
+    } else {
+      const keys = Array.from(new Set(allReviews.map(r=>monthKey(r.date)).filter(Boolean))).sort().reverse();
+      sel.innerHTML = keys.map(k=>`<option value="${k}">${monthLabel(k)}</option>`).join('') || '<option value="">No dated reviews yet</option>';
+    }
+    if(Array.from(sel.options).some(o=>o.value===current)) sel.value = current;
+  }
+  function applyPeriodFilter(records){
+    const type = document.getElementById('periodTypeHist').value;
+    if(type === 'all') return records;
+    const val = document.getElementById('periodValueHist').value;
+    if(!val) return records;
+    if(type === 'week') return records.filter(r=> weekKey(r.date) === val);
+    return records.filter(r=> monthKey(r.date) === val);
+  }
+  function renderHistory(){
+    document.getElementById('updatedAtHist').textContent = `updated ${new Date().toLocaleTimeString()}`;
+    populateAgentSelect(document.getElementById('agentFilterHist'), allReviews, true);
+    populatePeriodValueSelect();
+    const agentFilter = document.getElementById('agentFilterHist').value || '__all__';
+    const byAgentOnly = agentFilter==='__all__' ? allReviews : allReviews.filter(r=>r.agent===agentFilter);
+    const filtered = applyPeriodFilter(byAgentOnly);
+    document.getElementById('statCount').textContent = filtered.length;
+    const avg = filtered.length ? filtered.reduce((s,r)=>s+r.pct,0)/filtered.length : null;
+    document.getElementById('statAvg').textContent = avg!==null ? avg.toFixed(1)+'%' : '—';
+    document.getElementById('statAgents').textContent = new Set(filtered.map(r=>r.agent)).size;
+    const wrap = document.getElementById('historyTableWrap');
+    if(filtered.length===0){
+      wrap.innerHTML = '<div class="empty-state">No reviews logged for this period.</div>';
+    } else {
+      wrap.innerHTML = `<table class="datatable"><thead><tr><th>Date</th><th>Case #</th><th>Agent</th><th>Reviewer</th><th>Issue type</th><th>Score</th><th>Band</th></tr></thead>
+        <tbody>${filtered.map(r=>`<tr data-id="${r.id}"><td>${escapeHtml(r.date||'—')}</td><td>${escapeHtml(r.caseId||'—')}</td><td>${escapeHtml(r.agent)}</td><td>${escapeHtml(r.reviewer||'—')}</td><td>${escapeHtml(r.issueType||'—')}</td><td class="score-cell">${r.pct}%</td><td><span class="band-tag" style="color:${bandColor(r.bandKey)};background:${bandBg(r.bandKey)}">${escapeHtml(r.bandLabel)}</span></td></tr>`).join('')}</tbody></table>`;
+      wrap.querySelectorAll('tbody tr').forEach(tr=> tr.addEventListener('click', ()=> openDetail(tr.dataset.id)));
+    }
+    const ctx = document.getElementById('historyChart').getContext('2d');
+    if(historyChart) historyChart.destroy();
+    const byAgent = {};
+    filtered.forEach(r=>{ (byAgent[r.agent] = byAgent[r.agent]||[]).push(r.pct); });
+    const agents = Object.keys(byAgent).sort();
+    const avgs = agents.map(a=> byAgent[a].reduce((s,v)=>s+v,0)/byAgent[a].length);
+    historyChart = new Chart(ctx, { type:'bar', data:{ labels:agents, datasets:[{label:'Average score', data:avgs.map(v=>Math.round(v*10)/10), backgroundColor:avgs.map(v=> v<60?'#A0402B':v<80?'#A9762A':'#3F7857'), borderRadius:2, maxBarThickness:42}] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.parsed.y+'%'}}}, scales:{y:{beginAtZero:true,max:100,ticks:{callback:v=>v+'%'},grid:{color:'#E3E7E4'}},x:{grid:{display:false}}} }
+    });
+  }
+  document.getElementById('agentFilterHist').addEventListener('change', renderHistory);
+  document.getElementById('periodTypeHist').addEventListener('change', renderHistory);
+  document.getElementById('periodValueHist').addEventListener('change', renderHistory);
+  document.getElementById('refreshHist').addEventListener('click', ()=> loadReviews().then(renderHistory));
+
+  // ================= LEADERBOARD =================
+  function renderLeaderboard(){
+    const byAgent = {};
+    allReviews.forEach(r=>{ (byAgent[r.agent] = byAgent[r.agent]||[]).push(r); });
+    const rows = Object.keys(byAgent).map(agent=>{
+      const list = byAgent[agent].slice().sort((a,b)=> new Date(a.date)-new Date(b.date));
+      const avg = list.reduce((s,r)=>s+r.pct,0)/list.length;
+      const latest = list[list.length-1];
+      return {agent, avg, count:list.length, latestPct:latest.pct, latestBand:latest.bandKey};
+    }).sort((a,b)=> b.avg - a.avg);
+    const wrap = document.getElementById('leaderboardWrap');
+    if(rows.length===0){ wrap.innerHTML = '<div class="empty-state">No reviews logged yet.</div>'; return; }
+    wrap.innerHTML = `<table class="datatable"><thead><tr><th>Rank</th><th>Agent</th><th>Average</th><th>Reviews</th><th>Most recent</th></tr></thead>
+      <tbody>${rows.map((r,i)=>`<tr><td class="rank">#${i+1}</td><td>${escapeHtml(r.agent)}</td><td class="score-cell">${r.avg.toFixed(1)}%</td><td>${r.count}</td><td><span class="band-tag" style="color:${bandColor(r.latestBand)};background:${bandBg(r.latestBand)}">${r.latestPct}%</span></td></tr>`).join('')}</tbody></table>`;
+  }
+  document.getElementById('refreshLb').addEventListener('click', ()=> loadReviews().then(renderLeaderboard));
+
+  // ================= AGENT DASHBOARD =================
+  function setupAgentPicker(){
+    const wrap = document.getElementById('agentPickerWrap');
+    const picker = document.getElementById('agentPicker');
+    if(currentUser.role === 'agent'){
+      wrap.style.display = 'none';
+      renderAgentDashboard(currentUser.name);
+    } else {
+      wrap.style.display = 'flex';
+      const agents = Array.from(new Set(allReviews.map(r=>r.agent).filter(Boolean))).sort();
+      const current = picker.value;
+      picker.innerHTML = agents.map(a=>`<option value="${escapeHtml(a)}">${escapeHtml(a)}</option>`).join('');
+      if(agents.includes(current)) picker.value = current;
+      picker.onchange = ()=> renderAgentDashboard(picker.value);
+      if(agents.length) renderAgentDashboard(picker.value || agents[0]);
+      else document.getElementById('agentTableWrap').innerHTML = '<div class="empty-state">No reviews logged yet.</div>';
+    }
+  }
+  document.getElementById('refreshAgent').addEventListener('click', ()=> loadReviews().then(setupAgentPicker));
+
+  function renderAgentDashboard(agent){
+    const mine = allReviews.filter(r=>r.agent===agent).sort((a,b)=> new Date(a.date)-new Date(b.date));
+    document.getElementById('agStatCount').textContent = mine.length;
+    if(mine.length===0){
+      document.getElementById('agStatAvg').textContent='—'; document.getElementById('agStatBand').textContent='—';
+      document.getElementById('agentTableWrap').innerHTML = '<div class="empty-state">No reviews logged for this agent yet.</div>';
+      document.getElementById('strongList').innerHTML=''; document.getElementById('weakList').innerHTML='';
+      if(agentChart) agentChart.destroy();
+      return;
+    }
+    const avg = mine.reduce((s,r)=>s+r.pct,0)/mine.length;
+    document.getElementById('agStatAvg').textContent = avg.toFixed(1)+'%';
+    const latest = mine[mine.length-1];
+    document.getElementById('agStatBand').innerHTML = `<span class="band-tag" style="color:${bandColor(latest.bandKey)};background:${bandBg(latest.bandKey)}">${escapeHtml(latest.bandLabel)}</span>`;
+    const ctx = document.getElementById('agentChart').getContext('2d');
+    if(agentChart) agentChart.destroy();
+    agentChart = new Chart(ctx, { type:'line', data:{ labels: mine.map(r=>r.date), datasets:[{label:agent, data:mine.map(r=>r.pct), borderColor:'#1F5C56', backgroundColor:'rgba(31,92,86,0.08)', tension:0.25, fill:true, pointBackgroundColor:mine.map(r=>bandColor(r.bandKey)), pointRadius:5}] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.parsed.y+'%'}}}, scales:{y:{beginAtZero:true,max:100,ticks:{callback:v=>v+'%'},grid:{color:'#E3E7E4'}},x:{grid:{display:false}}} }
+    });
+    const catStats = {};
+    mine.forEach(r=> (r.rows||[]).forEach(row=>{
+      if(!row.cat) return;
+      const pctOfMax = row.max>0 ? (row.score/row.max)*100 : 0;
+      (catStats[row.cat] = catStats[row.cat]||[]).push(pctOfMax);
+    }));
+    const catAvgs = Object.keys(catStats).map(cat=>({cat, avg: catStats[cat].reduce((s,v)=>s+v,0)/catStats[cat].length}));
+    catAvgs.sort((a,b)=> b.avg - a.avg);
+    const strong = catAvgs.slice(0,3); const weak = catAvgs.slice(-3).reverse();
+    document.getElementById('strongList').innerHTML = strong.map(c=>`<div class="gs-chip"><span>${escapeHtml(c.cat)}</span><span class="val" style="color:var(--good)">${c.avg.toFixed(0)}%</span></div>`).join('') || '<div class="gs-chip">No data yet</div>';
+    document.getElementById('weakList').innerHTML = weak.map(c=>`<div class="gs-chip"><span>${escapeHtml(c.cat)}</span><span class="val" style="color:var(--bad)">${c.avg.toFixed(0)}%</span></div>`).join('') || '<div class="gs-chip">No data yet</div>';
+    const wrap = document.getElementById('agentTableWrap');
+    const reversed = mine.slice().reverse();
+    wrap.innerHTML = `<table class="datatable"><thead><tr><th>Date</th><th>Case #</th><th>Reviewer</th><th>Score</th><th>Band</th></tr></thead>
+      <tbody>${reversed.map(r=>`<tr data-id="${r.id}"><td>${escapeHtml(r.date||'—')}</td><td>${escapeHtml(r.caseId||'—')}</td><td>${escapeHtml(r.reviewer||'—')}</td><td class="score-cell">${r.pct}%</td><td><span class="band-tag" style="color:${bandColor(r.bandKey)};background:${bandBg(r.bandKey)}">${escapeHtml(r.bandLabel)}</span></td></tr>`).join('')}</tbody></table>`;
+    wrap.querySelectorAll('tbody tr').forEach(tr=> tr.addEventListener('click', ()=> openDetail(tr.dataset.id)));
+  }
+
+  // ================= DETAIL / COMMENT OVERLAY =================
+  async function openDetail(id){
+    const rec = allReviews.find(r=>String(r.id)===String(id));
+    if(!rec) return;
+    const isOwner = currentUser.id === rec.agentId;
+    const canDispute = isOwner;
+    const canCalibrate = currentUser.role==='reviewer' || currentUser.role==='admin';
+
+    document.getElementById('detailCard').innerHTML = `
+      <div class="detail-head"><h2>${escapeHtml(rec.agent)} — ${escapeHtml(rec.date||'')}</h2><button id="closeDetail">×</button></div>
+      <div class="detail-body">
+        <div class="detail-meta">Case #${escapeHtml(rec.caseId||'—')} · Reviewer: ${escapeHtml(rec.reviewer||'—')} · Issue type: ${escapeHtml(rec.issueType||'—')} · Score: <b>${rec.pct}%</b> (${escapeHtml(rec.bandLabel)})</div>
+        <table class="detail-rubric"><thead><tr><th>Category</th><th>Weight</th><th>Score</th><th>Notes</th></tr></thead>
+          <tbody>${(rec.rows||[]).map(row=>`<tr><td>${escapeHtml(row.cat)}</td><td>${row.weight}%</td><td>${row.score}/${row.max}</td><td>${escapeHtml(row.notes||'')}</td></tr>`).join('')}</tbody></table>
+        ${rec.overallNotes ? `<div style="font-size:13px;color:var(--ink-soft);margin-bottom:10px;"><b>Overall notes:</b> ${escapeHtml(rec.overallNotes)}</div>` : ''}
+        <div class="comment-thread">
+          <h4>Calibration &amp; dispute notes</h4>
+          <div id="commentList">${(rec.comments||[]).map(c=>`<div class="comment"><div class="c-meta"><span class="c-tag ${c.type}">${c.type}</span>${escapeHtml(c.author)} · ${new Date(c.ts).toLocaleString()}</div>${escapeHtml(c.text)}</div>`).join('') || '<div class="comment" style="color:var(--ink-soft);">No notes yet.</div>'}</div>
+          ${(canCalibrate || canDispute) ? `<div class="comment-form">
+            <select id="commentType">
+              ${canCalibrate ? '<option value="calibration">Calibration note</option>' : ''}
+              ${canDispute ? '<option value="dispute">Dispute score</option>' : ''}
+            </select>
+            <input id="commentText" placeholder="Add a note..." />
+            <button id="commentSubmit">Post</button>
+          </div>` : ''}
+        </div>
+      </div>`;
+    document.getElementById('detailOverlay').style.display='flex';
+    document.getElementById('closeDetail').addEventListener('click', ()=> document.getElementById('detailOverlay').style.display='none');
+    const submitBtn = document.getElementById('commentSubmit');
+    if(submitBtn){
+      submitBtn.addEventListener('click', async ()=>{
+        const text = document.getElementById('commentText').value.trim();
+        if(!text) return;
+        const type = document.getElementById('commentType').value;
+        const { data: fresh, error: fetchErr } = await sb.from('reviews').select('comments').eq('id', rec.id).single();
+        if(fetchErr){ showToast('Could not post note'); return; }
+        const newComments = (fresh.comments || []).concat([{ author: currentUser.name, role: currentUser.role, type, text, ts: new Date().toISOString() }]);
+        const { error } = await sb.from('reviews').update({ comments: newComments }).eq('id', rec.id);
+        if(error){ showToast('Could not post note'); return; }
+        showToast('Note posted');
+        document.getElementById('detailOverlay').style.display='none';
+        loadReviews().then(()=>{
+          const activeView = document.querySelector('.view.active').id;
+          if(activeView==='historyView') renderHistory();
+          if(activeView==='agentView') setupAgentPicker();
+        });
+      });
+    }
+  }
+
+  // ================= ADMIN =================
+  function renderAdmin(){
+    loadAllProfiles().then(people=>{
+      document.getElementById('rosterTable').innerHTML = `<tr><th>Name</th><th>Email</th><th>Role</th></tr>` +
+        people.map(p=>`<tr><td>${escapeHtml(p.name)}</td><td style="color:var(--ink-soft);font-size:12px;">${p.id===currentUser.id?escapeHtml(currentUser.email):''}</td><td>
+          <select class="role-select" data-id="${p.id}" ${p.id===currentUser.id?'disabled title="You can\'t change your own role"':''}>
+            <option value="agent" ${p.role==='agent'?'selected':''}>Agent</option>
+            <option value="reviewer" ${p.role==='reviewer'?'selected':''}>Reviewer</option>
+            <option value="admin" ${p.role==='admin'?'selected':''}>Admin</option>
+          </select>
+        </td></tr>`).join('');
+      document.querySelectorAll('.role-select').forEach(sel=>{
+        sel.addEventListener('change', async ()=>{
+          const { error } = await sb.from('profiles').update({ role: sel.value }).eq('id', sel.dataset.id);
+          if(error){ showToast('Could not update role — ' + error.message); return; }
+          showToast('Role updated');
+        });
+      });
+    });
+  }
+
+  // ================= INIT =================
+  defaultRows.forEach(makeRow);
+  recalc();
+  initGate();
+})();
+</script>
