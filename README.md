@@ -16,27 +16,27 @@ not just hidden in the UI.
 
 **Sign in** — one login screen; what you see next depends on your role (admin / reviewer / agent).
 
-![Sign in](screenshots/01-login.png)
+![Sign in](01-login.png)
 
 **Score a case** — an editable, weighted rubric with whole-number scoring, hard-capped at each category's max, and a live-calculated total and band.
 
-![Score a case](screenshots/02-score-a-case.png)
+![Score a case](02-score-a-case.png)
 
 **Team history** — the full review log, filterable by agent and by week or month, with a bar chart comparing agents.
 
-![Team history](screenshots/03-team-history.png)
+![Team history](03-team-history.png)
 
 **Leaderboard** — agents ranked by average score.
 
-![Leaderboard](screenshots/04-leaderboard.png)
+![Leaderboard](04-leaderboard.png)
 
 **Agent dashboard** — trend line over time, strongest/weakest rubric categories, and full review history for one agent.
 
-![Agent dashboard](screenshots/05-agent-dashboard.png)
+![Agent dashboard](05-agent-dashboard.png)
 
 **Calibration & dispute threads** — an agent can dispute a score on their own review; a reviewer can respond with a calibration note. Both show as a threaded log on the review.
 
-![Calibration and dispute thread](screenshots/06-calibration-dispute.png)
+![Calibration and dispute thread](06-calibration-dispute.png)
 
 ## Features
 
